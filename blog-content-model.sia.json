@@ -1,0 +1,177 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/blog-content-model",
+  "title": "Blog Content Model",
+  "type": "object",
+  "description": "A blog content model with posts, authors, and scientific article specialisation.",
+  "x-sia-instruction": "Blog content model. Posts require title, body, and author. ScientificPost extends BlogPost with peer review metadata.",
+  "x-maps-to": {
+    "schema.org": "https://schema.org/Blog"
+  },
+
+  "$defs": {
+    "BlogPost": {
+      "type": "object",
+      "description": "A published blog post.",
+      "x-sia-instruction": "A blog post. Title and author are always required for display. Summary can be dropped in constrained contexts.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/BlogPosting",
+        "Dublin Core": "http://purl.org/dc/dcmitype/Text"
+      },
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "description": "The main heading of the blog post.",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/headline",
+            "Dublin Core": "http://purl.org/dc/elements/1.1/title",
+            "Open Graph": "og:title"
+          }
+        },
+        "summary": {
+          "type": "string",
+          "maxLength": 500,
+          "description": "A brief abstract of the post.",
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Brief abstract, 1-2 sentences. Safe to drop in constrained contexts.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/abstract"
+          }
+        },
+        "body": {
+          "type": "string",
+          "description": "The full content of the blog post.",
+          "x-sia-role": "content",
+          "x-sia-priority": 2,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/articleBody"
+          }
+        },
+        "author": {
+          "$ref": "#/$defs/Author",
+          "description": "The author of the blog post.",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Link to Author type. Use author display name in summaries, never the raw ID or $ref path.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/author",
+            "Dublin Core": "http://purl.org/dc/elements/1.1/creator"
+          }
+        },
+        "publishedDate": {
+          "type": "string",
+          "format": "date",
+          "description": "The date the post was published.",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/datePublished",
+            "Dublin Core": "http://purl.org/dc/elements/1.1/date"
+          }
+        },
+        "category": {
+          "enum": ["tech", "science", "culture", "opinion"],
+          "description": "The editorial category of the post.",
+          "x-sia-role": "classification",
+          "x-sia-priority": 3,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/articleSection"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Free-form tags for the post.",
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/keywords"
+          }
+        }
+      },
+      "required": ["title", "body", "author"]
+    },
+
+    "Author": {
+      "type": "object",
+      "description": "A person who writes blog posts.",
+      "x-sia-instruction": "An author. Name is the primary display field.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Person"
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "description": "The author's display name.",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/name"
+          }
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "The author's contact email.",
+          "x-sia-role": "contact",
+          "x-sia-priority": 4,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/email"
+          }
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Short biography of the author.",
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3
+        }
+      },
+      "required": ["name"]
+    },
+
+    "ScientificPost": {
+      "description": "A blog post with academic/scientific metadata.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/ScholarlyArticle"
+      },
+      "allOf": [
+        { "$ref": "#/$defs/BlogPost" },
+        {
+          "type": "object",
+          "properties": {
+            "peerReviewed": {
+              "type": "boolean",
+              "description": "Whether the post has been peer reviewed.",
+              "x-sia-role": "status",
+              "x-sia-priority": 3
+            },
+            "journal": {
+              "type": "string",
+              "description": "The journal or publication where this was published.",
+              "x-sia-role": "descriptive",
+              "x-sia-priority": 4,
+              "x-maps-to": {
+                "schema.org": "https://schema.org/isPartOf"
+              }
+            },
+            "doi": {
+              "type": "string",
+              "pattern": "^10\\.\\d{4,}/.*$",
+              "description": "Digital Object Identifier.",
+              "x-sia-role": "identifier",
+              "x-sia-priority": 2,
+              "x-maps-to": {
+                "schema.org": "https://schema.org/identifier"
+              }
+            }
+          }
+        }
+      ]
+    }
+  }
+}

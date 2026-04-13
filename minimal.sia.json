@@ -1,0 +1,25 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Product",
+  "type": "object",
+  "x-sia-instruction": "A product listing. Name and price are essential.",
+  "properties": {
+    "name": {
+      "type": "string",
+      "x-sia-role": "identifier",
+      "x-sia-priority": 1
+    },
+    "price": {
+      "type": "number",
+      "minimum": 0,
+      "x-sia-role": "metric",
+      "x-sia-priority": 1
+    },
+    "description": {
+      "type": "string",
+      "x-sia-role": "descriptive",
+      "x-sia-priority": 3
+    }
+  },
+  "required": ["name", "price"]
+}
