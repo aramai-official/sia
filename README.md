@@ -1,4 +1,4 @@
-# SIA — Schema Intelligence Annotations
+# Schema Intelligence Annotations (SIA)
 
 **Make schemas intelligent for AI agents, interoperable across standards, and portable across platforms.**
 
