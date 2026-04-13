@@ -1,0 +1,204 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/education-lms",
+  "title": "Learning Management System",
+  "type": "object",
+  "x-sia-instruction": "Online course catalog. Course title, instructor, and level are essential for any listing.",
+
+  "$defs": {
+    "Course": {
+      "type": "object",
+      "x-sia-instruction": "An online course. Display title, instructor name, duration, and level in listings. Rating is important for recommendations.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Course",
+        "Dublin Core": "http://purl.org/dc/dcmitype/InteractiveResource"
+      },
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 120,
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/name",
+            "Dublin Core": "http://purl.org/dc/elements/1.1/title"
+          }
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 5,
+          "x-sia-instruction": "URL-safe identifier. For links only, never display."
+        },
+        "description": {
+          "type": "string",
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/description" }
+        },
+        "syllabus": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Detailed course outline. May be markdown. Use for detailed course pages, not listings."
+        },
+        "instructor": {
+          "$ref": "#/$defs/Instructor",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Course instructor. Always show instructor name alongside course title.",
+          "x-maps-to": { "schema.org": "https://schema.org/instructor" }
+        },
+        "level": {
+          "enum": ["beginner", "intermediate", "advanced", "expert"],
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Skill level required. Critical for recommendations — never recommend an advanced course to a stated beginner.",
+          "x-maps-to": { "schema.org": "https://schema.org/educationalLevel" }
+        },
+        "category": {
+          "type": "string",
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/courseCode" }
+        },
+        "durationHours": {
+          "type": "number",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Total course hours. Display as 'Xh' for short or 'X hours' for long form.",
+          "x-maps-to": { "schema.org": "https://schema.org/timeRequired" }
+        },
+        "modules": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Module" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Ordered list of course modules. Show count in listings, full list on detail page."
+        },
+        "rating": {
+          "type": "number",
+          "minimum": 0,
+          "maximum": 5,
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Average student rating out of 5. Display with one decimal place and star icons.",
+          "x-maps-to": { "schema.org": "https://schema.org/aggregateRating" }
+        },
+        "enrollmentCount": {
+          "type": "integer",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Total enrolled students. Use for social proof. Format as '1.2K students' for large numbers."
+        },
+        "price": {
+          "type": "object",
+          "properties": {
+            "amount": { "type": "number", "minimum": 0 },
+            "currency": { "type": "string", "default": "USD" }
+          },
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Course price. 0 = free course. Display as 'Free' not '$0'.",
+          "x-maps-to": { "schema.org": "https://schema.org/offers" }
+        },
+        "prerequisites": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Course" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Courses that should be completed before this one. Mention in recommendations.",
+          "x-maps-to": { "schema.org": "https://schema.org/coursePrerequisites" }
+        },
+        "language": {
+          "type": "string",
+          "default": "en",
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "ISO 639-1 language code. Important for international audiences.",
+          "x-maps-to": { "schema.org": "https://schema.org/inLanguage" }
+        },
+        "publishedDate": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 4,
+          "x-maps-to": { "schema.org": "https://schema.org/datePublished" }
+        },
+        "lastUpdated": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "When course content was last updated. Important for technical courses — flag if older than 2 years.",
+          "x-maps-to": { "schema.org": "https://schema.org/dateModified" }
+        },
+        "status": {
+          "enum": ["draft", "published", "archived", "coming-soon"],
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Only 'published' and 'coming-soon' should appear in public catalog."
+        },
+        "certificate": {
+          "type": "boolean",
+          "default": false,
+          "x-sia-role": "status",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Whether completing the course grants a certificate. Highlight in listings.",
+          "x-maps-to": { "schema.org": "https://schema.org/educationalCredentialAwarded" }
+        }
+      },
+      "required": ["title", "instructor", "level", "durationHours"]
+    },
+
+    "Module": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/HowToSection" },
+      "properties": {
+        "title": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "description": { "type": "string", "x-sia-role": "descriptive", "x-sia-priority": 3 },
+        "durationMinutes": { "type": "integer", "x-sia-role": "metric", "x-sia-priority": 2 },
+        "order": { "type": "integer", "x-sia-priority": 5 },
+        "lessons": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "title": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+              "type": { "enum": ["video", "reading", "quiz", "exercise", "project"],
+                "x-sia-role": "classification", "x-sia-priority": 2 },
+              "durationMinutes": { "type": "integer", "x-sia-role": "metric", "x-sia-priority": 3 }
+            },
+            "required": ["title", "type"]
+          },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 4
+        }
+      },
+      "required": ["title"]
+    },
+
+    "Instructor": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/Person" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/name" } },
+        "bio": { "type": "string", "maxLength": 500, "x-sia-role": "descriptive", "x-sia-priority": 3,
+          "x-sia-instruction": "Professional bio. 2-3 sentences for listings, full bio on profile page." },
+        "expertise": { "type": "array", "items": { "type": "string" },
+          "x-sia-role": "classification", "x-sia-priority": 3,
+          "x-sia-instruction": "Subject areas. Use for matching instructors to course recommendations." },
+        "courseCount": { "type": "integer", "x-sia-role": "metric", "x-sia-priority": 4 },
+        "averageRating": { "type": "number", "minimum": 0, "maximum": 5,
+          "x-sia-role": "metric", "x-sia-priority": 3 },
+        "photo": { "type": "string", "format": "uri", "x-sia-priority": 4,
+          "x-maps-to": { "schema.org": "https://schema.org/image" } }
+      },
+      "required": ["name"]
+    }
+  }
+}

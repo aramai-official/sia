@@ -1,0 +1,222 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/healthcare-patient",
+  "title": "Healthcare Patient Record",
+  "type": "object",
+  "x-sia-instruction": "Clinical patient record. Handle all fields as potentially sensitive PII/PHI. Name and MRN are essential identifiers. Never fabricate clinical data.",
+
+  "$defs": {
+    "Patient": {
+      "type": "object",
+      "description": "A patient in the healthcare system.",
+      "x-sia-instruction": "Patient demographic and clinical summary. Name and date of birth are the minimum identifiers. Never fabricate diagnoses, medications, or lab values.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Patient",
+        "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient",
+        "HL7 v2": "PID"
+      },
+      "properties": {
+        "mrn": {
+          "type": "string",
+          "pattern": "^MRN-[0-9]{8}$",
+          "description": "Medical Record Number.",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Primary patient identifier within the facility. Use in clinical contexts. Never expose in public-facing content.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.identifier",
+            "HL7 v2": "PID-3"
+          }
+        },
+        "name": {
+          "type": "object",
+          "properties": {
+            "given": {
+              "type": "array",
+              "items": { "type": "string" },
+              "description": "Given names (first, middle)."
+            },
+            "family": {
+              "type": "string",
+              "description": "Family name (surname)."
+            },
+            "prefix": {
+              "type": "string",
+              "description": "Title prefix (Dr., Mr., etc.)."
+            }
+          },
+          "required": ["given", "family"],
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Structured name. For display, format as 'Given Family' or 'Family, Given'. Include prefix when available in formal contexts.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.name",
+            "HL7 v2": "PID-5"
+          }
+        },
+        "dateOfBirth": {
+          "type": "string",
+          "format": "date",
+          "description": "Patient date of birth.",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Used for identity verification and age calculation. Format as locale-appropriate date. Calculate age from this, don't store age separately.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.birthDate",
+            "HL7 v2": "PID-7"
+          }
+        },
+        "gender": {
+          "enum": ["male", "female", "other", "unknown"],
+          "description": "Administrative gender.",
+          "x-sia-role": "classification",
+          "x-sia-priority": 3,
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.gender",
+            "HL7 v2": "PID-8"
+          }
+        },
+        "contact": {
+          "type": "object",
+          "properties": {
+            "phone": { "type": "string" },
+            "email": { "type": "string", "format": "email" },
+            "address": {
+              "type": "object",
+              "properties": {
+                "line": { "type": "array", "items": { "type": "string" } },
+                "city": { "type": "string" },
+                "state": { "type": "string" },
+                "postalCode": { "type": "string" },
+                "country": { "type": "string", "default": "US" }
+              }
+            }
+          },
+          "x-sia-role": "contact",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "PHI. Only include in communications directed to the patient or authorised staff.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.telecom"
+          }
+        },
+        "primaryCareProvider": {
+          "$ref": "#/$defs/Practitioner",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "The patient's assigned primary care physician. Use name and specialty when referencing.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.generalPractitioner"
+          }
+        },
+        "conditions": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Condition" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Active diagnoses. List in order of clinical significance. Never fabricate conditions.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Condition"
+          }
+        },
+        "medications": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Medication" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Active medication list. Include dosage and frequency. Critical for clinical decision support.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/MedicationStatement"
+          }
+        },
+        "allergies": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "substance": { "type": "string" },
+              "reaction": { "type": "string" },
+              "severity": { "enum": ["mild", "moderate", "severe", "life-threatening"] }
+            },
+            "required": ["substance"]
+          },
+          "x-sia-role": "status",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "CRITICAL: Always surface allergies prominently. Life-threatening allergies must never be omitted, even in minimal summaries.",
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/AllergyIntolerance"
+          }
+        },
+        "active": {
+          "type": "boolean",
+          "default": true,
+          "x-sia-role": "status",
+          "x-sia-priority": 5,
+          "x-maps-to": {
+            "FHIR": "http://hl7.org/fhir/StructureDefinition/Patient.active"
+          }
+        }
+      },
+      "required": ["mrn", "name", "dateOfBirth"]
+    },
+
+    "Practitioner": {
+      "type": "object",
+      "x-maps-to": {
+        "FHIR": "http://hl7.org/fhir/StructureDefinition/Practitioner",
+        "schema.org": "https://schema.org/Physician"
+      },
+      "properties": {
+        "npi": {
+          "type": "string",
+          "pattern": "^[0-9]{10}$",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "National Provider Identifier. Use in referrals and insurance contexts.",
+          "x-maps-to": { "FHIR": "http://hl7.org/fhir/StructureDefinition/Practitioner.identifier" }
+        },
+        "name": {
+          "type": "string",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/name" }
+        },
+        "specialty": {
+          "type": "string",
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-maps-to": { "FHIR": "http://hl7.org/fhir/StructureDefinition/PractitionerRole.specialty" }
+        }
+      },
+      "required": ["name"]
+    },
+
+    "Condition": {
+      "type": "object",
+      "x-maps-to": { "FHIR": "http://hl7.org/fhir/StructureDefinition/Condition" },
+      "properties": {
+        "code": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 2,
+          "x-sia-instruction": "ICD-10 or SNOMED code. Include the display name alongside the code." },
+        "display": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "status": { "enum": ["active", "recurrence", "relapse", "inactive", "remission", "resolved"],
+          "x-sia-role": "status", "x-sia-priority": 2 },
+        "onsetDate": { "type": "string", "format": "date", "x-sia-role": "temporal", "x-sia-priority": 3 }
+      },
+      "required": ["display", "status"]
+    },
+
+    "Medication": {
+      "type": "object",
+      "x-maps-to": { "FHIR": "http://hl7.org/fhir/StructureDefinition/MedicationStatement" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "dosage": { "type": "string", "x-sia-role": "metric", "x-sia-priority": 1,
+          "x-sia-instruction": "Dosage with units. e.g., '10mg', '500mg/5mL'. Always include." },
+        "frequency": { "type": "string", "x-sia-role": "temporal", "x-sia-priority": 2,
+          "x-sia-instruction": "How often taken. e.g., 'twice daily', 'every 8 hours'." },
+        "prescriber": { "$ref": "#/$defs/Practitioner", "x-sia-role": "relationship", "x-sia-priority": 3 },
+        "startDate": { "type": "string", "format": "date", "x-sia-role": "temporal", "x-sia-priority": 3 }
+      },
+      "required": ["name", "dosage"]
+    }
+  }
+}

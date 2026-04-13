@@ -1,0 +1,148 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/real-estate",
+  "title": "Real Estate Property Listing",
+  "type": "object",
+  "x-sia-instruction": "Real estate listings. Address and price are essential. Always include property type and bedroom count in any summary.",
+
+  "$defs": {
+    "Property": {
+      "type": "object",
+      "x-sia-instruction": "A property listing. For display: lead with price, then bedrooms/bathrooms, then address. Include photos when available.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/RealEstateListing"
+      },
+      "properties": {
+        "listingId": {
+          "type": "string",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "MLS or internal listing ID. Use for reference, not display."
+        },
+        "address": {
+          "type": "object",
+          "properties": {
+            "street": { "type": "string" },
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "zip": { "type": "string" },
+            "country": { "type": "string", "default": "US" }
+          },
+          "required": ["street", "city", "state", "zip"],
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Full property address. Format as 'Street, City, State ZIP' for display.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/address"
+          }
+        },
+        "price": {
+          "type": "number",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Listing price in USD. Format with commas and dollar sign. For rentals, append '/mo'.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/price"
+          }
+        },
+        "listingType": {
+          "enum": ["sale", "rent", "auction", "lease"],
+          "x-sia-role": "classification",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Determines how price is displayed and what actions are available."
+        },
+        "propertyType": {
+          "enum": ["house", "apartment", "condo", "townhouse", "land", "commercial"],
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/PropertyValue" }
+        },
+        "bedrooms": {
+          "type": "integer",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Number of bedrooms. 0 = studio. Always include in listing summaries.",
+          "x-maps-to": { "schema.org": "https://schema.org/numberOfBedrooms" }
+        },
+        "bathrooms": {
+          "type": "number",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Number of bathrooms. Half baths are 0.5.",
+          "x-maps-to": { "schema.org": "https://schema.org/numberOfBathroomsTotal" }
+        },
+        "sqft": {
+          "type": "integer",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Living area in square feet. Format with commas.",
+          "x-maps-to": { "schema.org": "https://schema.org/floorSize" }
+        },
+        "description": {
+          "type": "string",
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/description" }
+        },
+        "features": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Amenities and features. e.g., 'pool', 'garage', 'hardwood floors'. Use for filtering and highlights."
+        },
+        "agent": {
+          "$ref": "#/$defs/Agent",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Listing agent. Include name and phone in contact scenarios."
+        },
+        "photos": {
+          "type": "array",
+          "items": { "type": "string", "format": "uri" },
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Property photos. First is the hero image."
+        },
+        "listedDate": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/datePosted" }
+        },
+        "status": {
+          "enum": ["active", "pending", "sold", "withdrawn"],
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Critical: never recommend a 'sold' or 'withdrawn' property as available."
+        },
+        "coordinates": {
+          "type": "object",
+          "properties": {
+            "lat": { "type": "number" },
+            "lng": { "type": "number" }
+          },
+          "x-sia-priority": 5,
+          "x-maps-to": { "schema.org": "https://schema.org/geo" }
+        }
+      },
+      "required": ["address", "price", "listingType", "bedrooms"]
+    },
+
+    "Agent": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/RealEstateAgent" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "phone": { "type": "string", "x-sia-role": "contact", "x-sia-priority": 2 },
+        "email": { "type": "string", "format": "email", "x-sia-role": "contact", "x-sia-priority": 3 },
+        "licenseNumber": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 5 }
+      },
+      "required": ["name"]
+    }
+  }
+}

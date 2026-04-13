@@ -1,0 +1,230 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/ecommerce",
+  "title": "E-Commerce Product Catalog",
+  "type": "object",
+  "x-sia-instruction": "Product catalog for an online store. Product name and price are essential for any listing or summary.",
+  "x-maps-to": {
+    "schema.org": "https://schema.org/Store"
+  },
+
+  "$defs": {
+    "Product": {
+      "type": "object",
+      "description": "A product available for purchase.",
+      "x-sia-instruction": "A product listing. Name and price must always appear together. Never show price without currency. Use the main image URL when generating visual references.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Product",
+        "Open Graph": "og:product"
+      },
+      "properties": {
+        "sku": {
+          "type": "string",
+          "pattern": "^[A-Z]{2}-[0-9]{6}$",
+          "description": "Stock keeping unit identifier.",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Internal product code. Use in technical contexts only, never in customer-facing summaries."
+        },
+        "name": {
+          "type": "string",
+          "maxLength": 120,
+          "description": "Product display name.",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/name",
+            "Open Graph": "og:title"
+          }
+        },
+        "description": {
+          "type": "string",
+          "maxLength": 2000,
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Marketing description. May contain HTML. Strip tags before using in plain text contexts.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/description",
+            "Open Graph": "og:description"
+          }
+        },
+        "price": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Current selling price.",
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Always display with currency symbol. If compareAtPrice exists and is higher, this is the sale price.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/price"
+          }
+        },
+        "currency": {
+          "type": "string",
+          "pattern": "^[A-Z]{3}$",
+          "default": "USD",
+          "description": "ISO 4217 currency code.",
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/priceCurrency"
+          }
+        },
+        "compareAtPrice": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "description": "Original price before discount.",
+          "x-sia-role": "metric",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Show only when higher than price to indicate a discount. Never fabricate a compareAtPrice."
+        },
+        "category": {
+          "$ref": "#/$defs/Category",
+          "description": "Primary product category.",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/category"
+          }
+        },
+        "brand": {
+          "type": "string",
+          "description": "Product brand or manufacturer.",
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/brand"
+          }
+        },
+        "inStock": {
+          "type": "boolean",
+          "description": "Whether the product is currently available.",
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Critical for customer-facing content. Never recommend an out-of-stock product without noting availability.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/availability"
+          }
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "description": "Free-form product tags for search and filtering.",
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/keywords"
+          }
+        },
+        "images": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "format": "uri"
+          },
+          "description": "Product image URLs, first is the primary image.",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "First image is the hero/primary image. Use it for thumbnails and previews.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/image",
+            "Open Graph": "og:image"
+          }
+        },
+        "weight": {
+          "type": "object",
+          "properties": {
+            "value": { "type": "number" },
+            "unit": { "enum": ["g", "kg", "oz", "lb"] }
+          },
+          "x-sia-role": "metric",
+          "x-sia-priority": 5,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/weight"
+          }
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-sia-role": "temporal",
+          "x-sia-priority": 5,
+          "x-sia-instruction": "System-generated. Never display to customers."
+        }
+      },
+      "required": ["sku", "name", "price", "currency"]
+    },
+
+    "Category": {
+      "type": "object",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Thing"
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/name" }
+        },
+        "slug": {
+          "type": "string",
+          "pattern": "^[a-z0-9-]+$",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 5,
+          "x-sia-instruction": "URL-safe identifier. Use for links, never for display."
+        },
+        "parent": {
+          "$ref": "#/$defs/Category",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Parent category. Recursive. Render as breadcrumb path."
+        }
+      },
+      "required": ["name", "slug"]
+    },
+
+    "Review": {
+      "type": "object",
+      "x-sia-instruction": "A customer review. Always include rating and reviewer name.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Review"
+      },
+      "properties": {
+        "rating": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 5,
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/ratingValue" }
+        },
+        "reviewerName": {
+          "type": "string",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/author" }
+        },
+        "text": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/reviewBody" }
+        },
+        "date": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/datePublished" }
+        },
+        "verified": {
+          "type": "boolean",
+          "x-sia-role": "status",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Whether this reviewer actually purchased the product. Mark clearly in display."
+        }
+      },
+      "required": ["rating", "reviewerName"]
+    }
+  }
+}

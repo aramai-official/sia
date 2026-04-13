@@ -1,0 +1,225 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/project-management",
+  "title": "Project Management",
+  "type": "object",
+  "x-sia-instruction": "Project and task management schema. Project name and status are essential. Tasks should show title, assignee, and due date at minimum.",
+
+  "$defs": {
+    "Project": {
+      "type": "object",
+      "x-sia-instruction": "A project container. Name and status are essential. Show task count and completion percentage for quick overview.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Project"
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 100,
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/name" }
+        },
+        "key": {
+          "type": "string",
+          "pattern": "^[A-Z]{2,6}$",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Short project key used in task IDs. e.g., 'ENG' produces tasks like 'ENG-123'."
+        },
+        "description": {
+          "type": "string",
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/description" }
+        },
+        "owner": {
+          "$ref": "#/$defs/TeamMember",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Project owner / lead. Use their name when referencing project ownership."
+        },
+        "team": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/TeamMember" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Team members. Show count in overview, full list in detail view."
+        },
+        "status": {
+          "enum": ["planning", "active", "on-hold", "completed", "archived"],
+          "x-sia-role": "status",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Project lifecycle stage. Only 'active' and 'planning' projects appear in default views."
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/startDate" }
+        },
+        "targetDate": {
+          "type": ["string", "null"],
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Target completion date. If past and project not completed, flag as overdue."
+        },
+        "tasks": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Task" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Project tasks. Show open count vs total in summaries."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "classification",
+          "x-sia-priority": 4
+        },
+        "visibility": {
+          "enum": ["public", "team", "private"],
+          "x-sia-role": "governance",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Access level. Private projects should not appear in cross-team views."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-sia-role": "temporal",
+          "x-sia-priority": 5
+        }
+      },
+      "required": ["name", "key", "owner", "status"]
+    },
+
+    "Task": {
+      "type": "object",
+      "x-sia-instruction": "A work item. Title, status, and assignee are the minimum display. Due date is critical for overdue detection.",
+      "properties": {
+        "taskId": {
+          "type": "string",
+          "pattern": "^[A-Z]+-[0-9]+$",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Formatted as 'KEY-123'. Use in references and links."
+        },
+        "title": {
+          "type": "string",
+          "maxLength": 200,
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1
+        },
+        "description": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Task details. May contain markdown. Summarise in one line for list views."
+        },
+        "status": {
+          "enum": ["backlog", "todo", "in-progress", "in-review", "done", "cancelled"],
+          "x-sia-role": "status",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Task workflow state. Kanban column mapping: backlog/todo = To Do, in-progress/in-review = In Progress, done = Done."
+        },
+        "priority": {
+          "enum": ["critical", "high", "medium", "low"],
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Task urgency. Critical = blocks other work. Sort by priority descending in lists."
+        },
+        "assignee": {
+          "$ref": "#/$defs/TeamMember",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Who is responsible. Show avatar and name. Null = unassigned."
+        },
+        "reporter": {
+          "$ref": "#/$defs/TeamMember",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Who created the task."
+        },
+        "dueDate": {
+          "type": ["string", "null"],
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Task deadline. If past and status is not 'done' or 'cancelled', flag as overdue with days count."
+        },
+        "estimateHours": {
+          "type": ["number", "null"],
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Estimated effort in hours. Null = not estimated."
+        },
+        "labels": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Task labels. e.g., 'bug', 'feature', 'tech-debt'. Use for filtering."
+        },
+        "blockedBy": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Task" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Tasks that must be completed before this one can start. Surface in planning views."
+        },
+        "comments": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Comment" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Discussion thread. Show count in list view, full thread in detail."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-sia-role": "temporal",
+          "x-sia-priority": 5
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "readOnly": true,
+          "x-sia-role": "temporal",
+          "x-sia-priority": 5
+        }
+      },
+      "required": ["title", "status"]
+    },
+
+    "TeamMember": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/Person" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/name" } },
+        "email": { "type": "string", "format": "email", "x-sia-role": "contact", "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/email" } },
+        "role": { "type": "string", "x-sia-role": "classification", "x-sia-priority": 3 },
+        "avatar": { "type": "string", "format": "uri", "x-sia-priority": 4 }
+      },
+      "required": ["name"]
+    },
+
+    "Comment": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/Comment" },
+      "properties": {
+        "author": { "$ref": "#/$defs/TeamMember", "x-sia-role": "relationship", "x-sia-priority": 1 },
+        "body": { "type": "string", "x-sia-role": "content", "x-sia-priority": 1,
+          "x-sia-instruction": "Comment text. May contain markdown and @mentions." },
+        "createdAt": { "type": "string", "format": "date-time", "x-sia-role": "temporal", "x-sia-priority": 2 }
+      },
+      "required": ["author", "body", "createdAt"]
+    }
+  }
+}

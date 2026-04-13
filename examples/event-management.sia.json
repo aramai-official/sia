@@ -1,0 +1,162 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/event-management",
+  "title": "Event Management",
+  "type": "object",
+  "x-sia-instruction": "Event and conference management. Event name, date, and venue are essential.",
+
+  "$defs": {
+    "Event": {
+      "type": "object",
+      "x-sia-instruction": "A scheduled event. Name, date, and location are the minimum for any listing. Capacity and registration status determine available actions.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Event"
+      },
+      "properties": {
+        "name": {
+          "type": "string",
+          "maxLength": 150,
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/name",
+            "Open Graph": "og:title"
+          }
+        },
+        "tagline": {
+          "type": "string",
+          "maxLength": 200,
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Short promotional tagline. Use below the event name in listings."
+        },
+        "description": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 3,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/description"
+          }
+        },
+        "startDate": {
+          "type": "string",
+          "format": "date-time",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Event start. Format as 'Day, Month Date, Year at HH:MM timezone'. Always include timezone.",
+          "x-maps-to": {
+            "schema.org": "https://schema.org/startDate"
+          }
+        },
+        "endDate": {
+          "type": "string",
+          "format": "date-time",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/endDate" }
+        },
+        "venue": {
+          "$ref": "#/$defs/Venue",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Where the event takes place. For virtual events, this contains the platform and link.",
+          "x-maps-to": { "schema.org": "https://schema.org/location" }
+        },
+        "format": {
+          "enum": ["in-person", "virtual", "hybrid"],
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Determines what location info to show. Virtual = show link. In-person = show address. Hybrid = show both."
+        },
+        "capacity": {
+          "type": "integer",
+          "minimum": 1,
+          "x-sia-role": "metric",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/maximumAttendeeCapacity" }
+        },
+        "registeredCount": {
+          "type": "integer",
+          "minimum": 0,
+          "x-sia-role": "metric",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Current registrations. Compare with capacity to show availability."
+        },
+        "ticketPrice": {
+          "type": "object",
+          "properties": {
+            "amount": { "type": "number", "minimum": 0 },
+            "currency": { "type": "string", "default": "USD" }
+          },
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Amount of 0 means free event. Display as 'Free' not '$0.00'.",
+          "x-maps-to": { "schema.org": "https://schema.org/offers" }
+        },
+        "speakers": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/Speaker" },
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Event speakers. List by presentation order. Include name and topic."
+        },
+        "status": {
+          "enum": ["draft", "published", "cancelled", "postponed", "completed"],
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Only 'published' events are public. Cancelled events should show cancellation notice prominently."
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-maps-to": { "schema.org": "https://schema.org/keywords" }
+        },
+        "registrationUrl": {
+          "type": "string",
+          "format": "uri",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Registration link. Only relevant for published events with available capacity."
+        }
+      },
+      "required": ["name", "startDate", "venue", "format"],
+
+      "if": { "properties": { "format": { "const": "virtual" } } },
+      "then": {
+        "x-sia-instruction": "Virtual event: venue contains platform and meeting link instead of physical address."
+      }
+    },
+
+    "Venue": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/Place" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1,
+          "x-maps-to": { "schema.org": "https://schema.org/name" } },
+        "address": { "type": "string", "x-sia-role": "contact", "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/address" } },
+        "virtualPlatform": { "enum": ["zoom", "teams", "meet", "webex", "other"],
+          "x-sia-role": "classification", "x-sia-priority": 2 },
+        "meetingLink": { "type": "string", "format": "uri",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Only share with registered attendees. Never expose publicly." }
+      },
+      "required": ["name"]
+    },
+
+    "Speaker": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/Person" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "bio": { "type": "string", "x-sia-role": "descriptive", "x-sia-priority": 3 },
+        "topic": { "type": "string", "x-sia-role": "descriptive", "x-sia-priority": 2,
+          "x-sia-instruction": "What this speaker presents. Include in event agenda listings." },
+        "photo": { "type": "string", "format": "uri", "x-sia-priority": 4,
+          "x-maps-to": { "schema.org": "https://schema.org/image" } }
+      },
+      "required": ["name"]
+    }
+  }
+}

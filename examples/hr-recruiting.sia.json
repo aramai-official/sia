@@ -1,0 +1,165 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/hr-recruiting",
+  "title": "HR Recruiting",
+  "type": "object",
+  "x-sia-instruction": "Recruiting and talent management schema. Job title and department are essential identifiers.",
+
+  "$defs": {
+    "JobPosting": {
+      "type": "object",
+      "x-sia-instruction": "A job opening. Title, department, and location are essential. Salary range should be included when available but never fabricated.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/JobPosting",
+        "Dublin Core": "http://purl.org/dc/dcmitype/Text"
+      },
+      "properties": {
+        "title": {
+          "type": "string",
+          "maxLength": 100,
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-maps-to": {
+            "schema.org": "https://schema.org/title",
+            "LinkedIn": "title"
+          }
+        },
+        "department": {
+          "type": "string",
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/department" }
+        },
+        "description": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Full job description. May be HTML. Summarise in 2-3 sentences for listings.",
+          "x-maps-to": { "schema.org": "https://schema.org/description" }
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "city": { "type": "string" },
+            "state": { "type": "string" },
+            "country": { "type": "string" },
+            "remote": { "type": "boolean", "default": false }
+          },
+          "x-sia-role": "contact",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "If remote is true, display 'Remote' instead of city/state. If hybrid, show 'Hybrid - City, State'.",
+          "x-maps-to": { "schema.org": "https://schema.org/jobLocation" }
+        },
+        "employmentType": {
+          "enum": ["full-time", "part-time", "contract", "internship", "temporary"],
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/employmentType" }
+        },
+        "salaryRange": {
+          "type": "object",
+          "properties": {
+            "min": { "type": "number" },
+            "max": { "type": "number" },
+            "currency": { "type": "string", "default": "USD" },
+            "period": { "enum": ["hourly", "monthly", "annual"] }
+          },
+          "x-sia-role": "metric",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Display as range: '$X - $Y per year'. If only min or max exists, show 'from $X' or 'up to $Y'. Never fabricate salary data.",
+          "x-maps-to": { "schema.org": "https://schema.org/baseSalary" }
+        },
+        "requirements": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Required qualifications. Present as a list. Distinguish 'required' from 'preferred' if the data supports it."
+        },
+        "benefits": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "descriptive",
+          "x-sia-priority": 4,
+          "x-maps-to": { "schema.org": "https://schema.org/jobBenefits" }
+        },
+        "hiringManager": {
+          "$ref": "#/$defs/Employee",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Internal only. Do not expose in public job postings."
+        },
+        "postedDate": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-maps-to": { "schema.org": "https://schema.org/datePosted" }
+        },
+        "closingDate": {
+          "type": ["string", "null"],
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "If null, the position is open until filled. If past, the posting has expired.",
+          "x-maps-to": { "schema.org": "https://schema.org/validThrough" }
+        },
+        "status": {
+          "enum": ["draft", "open", "paused", "filled", "cancelled"],
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Only 'open' postings should appear in public listings."
+        }
+      },
+      "required": ["title", "department", "description", "location", "employmentType"]
+    },
+
+    "Candidate": {
+      "type": "object",
+      "x-sia-instruction": "A job applicant. PII — handle with care. Name and email are primary identifiers.",
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "email": { "type": "string", "format": "email", "x-sia-role": "contact", "x-sia-priority": 1 },
+        "phone": { "type": "string", "x-sia-role": "contact", "x-sia-priority": 4 },
+        "resumeUrl": {
+          "type": "string",
+          "format": "uri",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Link to uploaded resume. Do not summarise resume content unless the document has been read."
+        },
+        "appliedFor": {
+          "$ref": "#/$defs/JobPosting",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2
+        },
+        "stage": {
+          "enum": ["applied", "screening", "interview", "offer", "hired", "rejected", "withdrawn"],
+          "x-sia-role": "status",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Current pipeline stage. Determines available actions."
+        },
+        "appliedDate": { "type": "string", "format": "date", "x-sia-role": "temporal", "x-sia-priority": 3 },
+        "notes": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Internal recruiter notes. Confidential. Never include in candidate-facing communications."
+        }
+      },
+      "required": ["name", "email", "appliedFor", "stage"]
+    },
+
+    "Employee": {
+      "type": "object",
+      "x-maps-to": { "schema.org": "https://schema.org/Person" },
+      "properties": {
+        "name": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 1 },
+        "email": { "type": "string", "format": "email", "x-sia-role": "contact", "x-sia-priority": 2 },
+        "title": { "type": "string", "x-sia-role": "classification", "x-sia-priority": 2,
+          "x-maps-to": { "schema.org": "https://schema.org/jobTitle" } },
+        "department": { "type": "string", "x-sia-role": "classification", "x-sia-priority": 3 }
+      },
+      "required": ["name"]
+    }
+  }
+}

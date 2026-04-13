@@ -1,0 +1,214 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://www.schematica.io/sia/examples/iot-monitoring",
+  "title": "IoT Sensor Monitoring",
+  "type": "object",
+  "x-sia-instruction": "IoT device and sensor data. Device ID and last reading are essential. Alert status must always be surfaced prominently.",
+
+  "$defs": {
+    "Device": {
+      "type": "object",
+      "x-sia-instruction": "An IoT device. Always show device name, status, and last seen time. If status is 'offline' or 'error', highlight immediately.",
+      "x-maps-to": {
+        "schema.org": "https://schema.org/Thing",
+        "W3C WoT": "https://www.w3.org/2019/wot/td#Thing"
+      },
+      "properties": {
+        "deviceId": {
+          "type": "string",
+          "pattern": "^DEV-[A-Z0-9]{8}$",
+          "x-sia-role": "identifier",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Unique hardware identifier. Use for technical references. Display the friendlyName for users."
+        },
+        "friendlyName": {
+          "type": "string",
+          "maxLength": 64,
+          "x-sia-role": "identifier",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Human-readable device name. e.g., 'Warehouse Temp Sensor #3'. Always prefer this over deviceId in UI."
+        },
+        "type": {
+          "enum": ["temperature", "humidity", "pressure", "motion", "light", "air-quality", "power", "water-flow", "gateway"],
+          "x-sia-role": "classification",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Sensor type determines which readings and thresholds are relevant."
+        },
+        "location": {
+          "type": "object",
+          "properties": {
+            "building": { "type": "string" },
+            "floor": { "type": "string" },
+            "zone": { "type": "string" },
+            "coordinates": {
+              "type": "object",
+              "properties": {
+                "lat": { "type": "number" },
+                "lng": { "type": "number" }
+              }
+            }
+          },
+          "x-sia-role": "contact",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Physical location. Format as 'Building > Floor > Zone' for breadcrumb display."
+        },
+        "status": {
+          "enum": ["online", "offline", "error", "maintenance", "decommissioned"],
+          "x-sia-role": "status",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "CRITICAL: 'error' and 'offline' states must be flagged visually. 'decommissioned' devices should be hidden from active dashboards."
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Last communication timestamp. If older than the device's expected interval, flag as potentially offline."
+        },
+        "latestReading": {
+          "$ref": "#/$defs/SensorReading",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Most recent sensor measurement. Always show with the device in dashboards."
+        },
+        "thresholds": {
+          "$ref": "#/$defs/ThresholdConfig",
+          "x-sia-role": "governance",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Alert thresholds. Use to determine if latest reading is in normal, warning, or critical range."
+        },
+        "firmware": {
+          "type": "string",
+          "x-sia-priority": 5,
+          "x-sia-instruction": "Firmware version. Only relevant for maintenance and update operations."
+        },
+        "batteryPercent": {
+          "type": ["integer", "null"],
+          "minimum": 0,
+          "maximum": 100,
+          "x-sia-role": "metric",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Battery level. Null for mains-powered devices. Flag if below 20%."
+        },
+        "installedDate": {
+          "type": "string",
+          "format": "date",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 5
+        },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string" },
+          "x-sia-role": "classification",
+          "x-sia-priority": 4,
+          "x-sia-instruction": "Organisational tags for grouping and filtering. e.g., 'cold-chain', 'critical-infrastructure'."
+        }
+      },
+      "required": ["deviceId", "friendlyName", "type", "status"]
+    },
+
+    "SensorReading": {
+      "type": "object",
+      "x-sia-instruction": "A single sensor measurement at a point in time. Value and unit must always appear together. Timestamp is essential.",
+      "properties": {
+        "value": {
+          "type": "number",
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "The measured value. Always display with the unit. Round to appropriate precision for the sensor type."
+        },
+        "unit": {
+          "type": "string",
+          "x-sia-role": "metric",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Unit of measurement. e.g., '°C', '°F', '%RH', 'hPa', 'lux', 'ppm', 'W', 'L/min'."
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "When this measurement was taken. Display as relative time for recent readings ('2 min ago'), absolute for older."
+        },
+        "quality": {
+          "enum": ["good", "degraded", "poor", "unknown"],
+          "x-sia-role": "status",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Signal/measurement quality. 'degraded' and 'poor' readings should be visually marked as unreliable."
+        }
+      },
+      "required": ["value", "unit", "timestamp"]
+    },
+
+    "ThresholdConfig": {
+      "type": "object",
+      "x-sia-instruction": "Alert thresholds for a device. Defines normal, warning, and critical ranges.",
+      "properties": {
+        "warningLow": { "type": "number", "x-sia-role": "metric", "x-sia-priority": 3 },
+        "warningHigh": { "type": "number", "x-sia-role": "metric", "x-sia-priority": 3 },
+        "criticalLow": { "type": "number", "x-sia-role": "metric", "x-sia-priority": 2,
+          "x-sia-instruction": "Below this value triggers critical alert. Requires immediate attention." },
+        "criticalHigh": { "type": "number", "x-sia-role": "metric", "x-sia-priority": 2,
+          "x-sia-instruction": "Above this value triggers critical alert. Requires immediate attention." }
+      }
+    },
+
+    "Alert": {
+      "type": "object",
+      "x-sia-instruction": "An alert triggered by a sensor reading exceeding thresholds. Severity and device are always essential. Never downplay critical alerts.",
+      "properties": {
+        "alertId": { "type": "string", "x-sia-role": "identifier", "x-sia-priority": 3 },
+        "device": {
+          "$ref": "#/$defs/Device",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "The device that triggered this alert. Show device name and location."
+        },
+        "severity": {
+          "enum": ["info", "warning", "critical"],
+          "x-sia-role": "status",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Alert severity. Critical alerts should be styled with red, warnings with amber, info with blue."
+        },
+        "message": {
+          "type": "string",
+          "x-sia-role": "content",
+          "x-sia-priority": 1,
+          "x-sia-instruction": "Human-readable alert description. e.g., 'Temperature exceeded 35°C threshold'."
+        },
+        "reading": {
+          "$ref": "#/$defs/SensorReading",
+          "x-sia-role": "relationship",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "The reading that triggered the alert."
+        },
+        "triggeredAt": {
+          "type": "string",
+          "format": "date-time",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 1
+        },
+        "acknowledged": {
+          "type": "boolean",
+          "default": false,
+          "x-sia-role": "status",
+          "x-sia-priority": 2,
+          "x-sia-instruction": "Whether a human has acknowledged this alert. Unacknowledged critical alerts should be escalated."
+        },
+        "acknowledgedBy": {
+          "type": "string",
+          "x-sia-role": "governance",
+          "x-sia-priority": 4
+        },
+        "resolvedAt": {
+          "type": ["string", "null"],
+          "format": "date-time",
+          "x-sia-role": "temporal",
+          "x-sia-priority": 3,
+          "x-sia-instruction": "Null = still active. Non-null = resolved. Show duration between triggeredAt and resolvedAt."
+        }
+      },
+      "required": ["device", "severity", "message", "triggeredAt"]
+    }
+  }
+}
